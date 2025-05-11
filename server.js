@@ -53,6 +53,11 @@ app.use('/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Rota de healthcheck
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 app.use('/cnpj', cnpjRoutes);
 app.use('/email', emailRoutes);
 app.use('/stripe', stripeRoutes);
