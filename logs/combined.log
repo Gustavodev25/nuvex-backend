@@ -2755,3 +2755,5 @@
 {"level":"info","message":"POST /validate/document - IP: ::1","timestamp":"2025-05-11T20:19:25.546Z"}
 {"level":"info","message":"OPTIONS /stripe/create-checkout-session - IP: ::1","timestamp":"2025-05-11T20:19:26.353Z"}
 {"level":"info","message":"POST /stripe/create-checkout-session - IP: ::1","timestamp":"2025-05-11T20:19:26.361Z"}
+{"level":"info","message":"Firebase Admin inicializado com sucesso","timestamp":"2025-05-11T21:06:45.876Z"}
+{"level":"info","message":"Servidor rodando na porta 3000","timestamp":"2025-05-11T21:06:47.489Z"}
