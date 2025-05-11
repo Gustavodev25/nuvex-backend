@@ -12,12 +12,32 @@ const signupRoutes = require('./routes/signup');
 const securityRoutes = require('./routes/security');
 const validateRouter = require('./routes/validate');
 const loginRoutes = require('./routes/login');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const { admin } = require('./firebase');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const FRONTEND_URL = 'nuvex-backend-production.up.railway.app';
 
+const corsOptions = {
+  origin: [
+    'https://nuvex-complete.vercel.app',
+    'http://localhost:8080',
+    'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
 app.set('trust proxy', 1);
+
+app.use(helmet());
+app.use(compression());
+app.use(cors(corsOptions));
 
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path} - IP: ${req.ip}`);
@@ -55,9 +75,13 @@ app.use('/security', securityRoutes);
 app.use('/validate', validateRouter);
 app.use('/login', loginRoutes);
 
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 app.use((err, req, res, next) => {
   logger.error('Erro inesperado:', err.stack);
   res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
-app.listen(PORT, () => logger.info(`Servidor rodando na porta ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => logger.info(`Servidor rodando na porta ${PORT}`));
