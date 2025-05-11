@@ -1,4 +1,8 @@
 const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const { admin } = require('./firebase');
 const winston = require('winston');
 const logger = require('./logger');
 const cnpjRoutes = require('./routes/cnpj');
@@ -14,8 +18,16 @@ const validateRouter = require('./routes/validate');
 const loginRoutes = require('./routes/login');
 
 const app = express();
-const PORT = 3000;
-const FRONTEND_URL = 'http://localhost:8080';
+
+// Middlewares
+app.use(helmet());
+app.use(compression());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:8080',
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.set('trust proxy', 1);
 
@@ -25,7 +37,7 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', FRONTEND_URL);
+  res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:8080');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Credentials', true);
@@ -40,9 +52,7 @@ app.use((req, res, next) => {
 // Para webhooks Stripe (raw body)
 app.use('/stripe/webhook', express.raw({ type: 'application/json' }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
+// Rotas
 app.use('/cnpj', cnpjRoutes);
 app.use('/email', emailRoutes);
 app.use('/stripe', stripeRoutes);
@@ -60,4 +70,20 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
-app.listen(PORT, () => logger.info(`Servidor rodando na porta ${PORT}`));
+// Handler para erro não tratado
+process.on('uncaughtException', (err) => {
+  console.error('Erro não tratado:', err);
+  process.exit(1);
+});
+
+process.on('SIGTERM', () => {
+  console.log('Recebido SIGTERM. Encerrando graciosamente...');
+  process.exit(0);
+});
+
+// Porta dinâmica para Railway
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
