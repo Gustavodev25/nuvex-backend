@@ -19,13 +19,14 @@ const { admin } = require('./firebase');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const FRONTEND_URL = 'nuvex-backend-production.up.railway.app';
 
 const corsOptions = {
   origin: [
     'https://nuvex-complete.vercel.app',
     'http://localhost:8080',
-    'http://localhost:3000'
+    'http://localhost:8081',
+    'http://localhost:3000',
+    'nuvex-backend-production.up.railway.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -41,19 +42,6 @@ app.use(cors(corsOptions));
 
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path} - IP: ${req.ip}`);
-  next();
-});
-
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://nuvex-complete.vercel.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
   next();
 });
 
@@ -86,7 +74,7 @@ app.use((err, req, res, next) => {
 
 process.on('uncaughtException', (err) => {
   console.error('Erro não tratado:', err);
-  if (!process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV !== 'production') {
     process.exit(1);
   }
 });
