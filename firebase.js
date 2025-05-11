@@ -9,9 +9,15 @@ try {
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
       // Use variáveis de ambiente no Koyeb
       try {
-        let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-        // Tenta corrigir quebras de linha e remover espaços extras
-        privateKey = privateKey.trim();
+        let privateKey = process.env.FIREBASE_PRIVATE_KEY.trim();
+        // Log para depuração
+        logger.info('Formato da FIREBASE_PRIVATE_KEY:', {
+          startsWith: privateKey.startsWith('-----BEGIN PRIVATE KEY-----'),
+          endsWith: privateKey.endsWith('-----END PRIVATE KEY-----'),
+          length: privateKey.length,
+        });
+
+        // Corrige quebras de linha se necessário
         if (privateKey.includes('\\n')) {
           privateKey = privateKey.replace(/\\n/g, '\n');
         }
@@ -21,10 +27,11 @@ try {
           privateKey: privateKey,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         };
+
         credential = admin.credential.cert(serviceAccount);
       } catch (error) {
         logger.error('Erro ao configurar credenciais do Firebase a partir de variáveis de ambiente:', {
-          message: error.ConcurrentModificationException,
+          message: error.message,
           code: error.code,
           stack: error.stack,
         });
@@ -48,7 +55,7 @@ try {
 
     admin.initializeApp({
       credential: credential,
-      storageBucket: 'nuvex-5c9f4.firebasestorage.app', // Opcional, se usar Storage
+      storageBucket: 'nuvex-5c9f4.firebasestorage.app',
     });
 
     logger.info('Firebase Admin inicializado com sucesso');
