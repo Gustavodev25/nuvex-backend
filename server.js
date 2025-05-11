@@ -52,6 +52,11 @@ app.use((req, res, next) => {
 // Para webhooks Stripe (raw body)
 app.use('/stripe/webhook', express.raw({ type: 'application/json' }));
 
+// Rotas básicas
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 // Rotas
 app.use('/cnpj', cnpjRoutes);
 app.use('/email', emailRoutes);
