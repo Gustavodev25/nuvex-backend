@@ -15,7 +15,7 @@ const loginRoutes = require('./routes/login');
 
 const app = express();
 const PORT = 3000;
-const FRONTEND_URL = 'http://localhost:8080';
+const FRONTEND_URL = 'nuvex-backend-production.up.railway.app';
 
 app.set('trust proxy', 1);
 
