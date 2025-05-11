@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const path = require('path');
 const logger = require('./logger');
 
 try {
@@ -8,19 +9,29 @@ try {
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
       // Use variáveis de ambiente no Koyeb
       try {
+        let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+        // Tenta corrigir quebras de linha e remover espaços extras
+        privateKey = privateKey.trim();
+        if (privateKey.includes('\\n')) {
+          privateKey = privateKey.replace(/\\n/g, '\n');
+        }
+
         const serviceAccount = {
           projectId: process.env.FIREBASE_PROJECT_ID,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Converte \n em quebras de linha
+          privateKey: privateKey,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         };
         credential = admin.credential.cert(serviceAccount);
       } catch (error) {
-        logger.error('Erro ao configurar credenciais do Firebase a partir de variáveis de ambiente:', error);
+        logger.error('Erro ao configurar credenciais do Firebase a partir de variáveis de ambiente:', {
+          message: error.ConcurrentModificationException,
+          code: error.code,
+          stack: error.stack,
+        });
         process.exit(1);
       }
     } else {
       // Use arquivo local em desenvolvimento
-      const path = require('path');
       const serviceAccountPath = path.join(__dirname, 'nuvex-5c9f4-firebase-adminsdk-fbsvc-242757154f.json');
       try {
         const serviceAccount = require(serviceAccountPath);
@@ -43,7 +54,11 @@ try {
     logger.info('Firebase Admin inicializado com sucesso');
   }
 } catch (error) {
-  logger.error('Erro ao inicializar Firebase Admin:', error);
+  logger.error('Erro ao inicializar Firebase Admin:', {
+    message: error.message,
+    code: error.code,
+    stack: error.stack,
+  });
   process.exit(1);
 }
 
