@@ -15,9 +15,11 @@ const loginRoutes = require('./routes/login');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const FRONTEND_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://nuvex.com.br' // ajuste para sua URL de produção
-  : 'http://localhost:8080';
+const ALLOWED_ORIGINS = [
+  'http://localhost:8080',
+  'https://nuvex-complete.vercel.app',
+  'https://nuvex-complete-p0k0h7d3a-gustavodev25s-projects.vercel.app'
+];
 
 // Aumentar timeout para 120 segundos
 app.use((req, res, next) => {
@@ -35,7 +37,10 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', FRONTEND_URL);
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Credentials', true);

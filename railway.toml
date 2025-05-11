@@ -12,3 +12,5 @@ restartPolicyMaxRetries = 3
 
 [deploy.kv]
 STAGE = "production"
+NODE_ENV = "production"
+FRONTEND_URL = "https://nuvex-complete-p0k0h7d3a-gustavodev25s-projects.vercel.app"
