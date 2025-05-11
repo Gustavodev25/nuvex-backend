@@ -45,10 +45,10 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', FRONTEND_URL);
+  res.header('Access-Control-Allow-Origin', 'https://nuvex-complete.vercel.app');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Credentials', true);
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -76,7 +76,7 @@ app.use('/validate', validateRouter);
 app.use('/login', loginRoutes);
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.use((err, req, res, next) => {
@@ -84,4 +84,19 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
-app.listen(PORT, '0.0.0.0', () => logger.info(`Servidor rodando na porta ${PORT}`));
+process.on('uncaughtException', (err) => {
+  console.error('Erro não tratado:', err);
+  if (!process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM recebido. Encerrando graciosamente...');
+  process.exit(0);
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log('Modo:', process.env.NODE_ENV || 'development');
+});
