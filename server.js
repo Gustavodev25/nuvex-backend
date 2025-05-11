@@ -12,43 +12,35 @@ const signupRoutes = require('./routes/signup');
 const securityRoutes = require('./routes/security');
 const validateRouter = require('./routes/validate');
 const loginRoutes = require('./routes/login');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const { admin } = require('./firebase');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const ALLOWED_ORIGINS = [
-  'http://localhost:8080',
-  'https://nuvex-complete.vercel.app',
-  'https://nuvex-complete-p0k0h7d3a-gustavodev25s-projects.vercel.app'
-];
+const FRONTEND_URL = 'nuvex-backend-production.up.railway.app';
 
-// Aumentar timeout para 120 segundos
-app.use((req, res, next) => {
-  res.setTimeout(120000, () => {
-    res.status(408).send('Request timeout');
-  });
-  next();
-});
+const corsOptions = {
+  origin: [
+    'https://nuvex-complete.vercel.app',
+    'http://localhost:8080',
+    'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
 
 app.set('trust proxy', 1);
 
+app.use(helmet());
+app.use(compression());
+app.use(cors(corsOptions));
+
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path} - IP: ${req.ip}`);
-  next();
-});
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (ALLOWED_ORIGINS.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Credentials', true);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
   next();
 });
 
@@ -57,11 +49,6 @@ app.use('/stripe/webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Rota de healthcheck
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
 
 app.use('/cnpj', cnpjRoutes);
 app.use('/email', emailRoutes);
@@ -75,9 +62,28 @@ app.use('/security', securityRoutes);
 app.use('/validate', validateRouter);
 app.use('/login', loginRoutes);
 
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 app.use((err, req, res, next) => {
   logger.error('Erro inesperado:', err.stack);
   res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
-app.listen(PORT, () => logger.info(`Servidor rodando na porta ${PORT}`));
+process.on('uncaughtException', (err) => {
+  console.error('Erro não tratado:', err);
+  if (!process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM recebido. Encerrando graciosamente...');
+  process.exit(0);
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log('Modo:', process.env.NODE_ENV || 'development');
+});
