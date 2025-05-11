@@ -1,6 +1,46 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../firebase');
+const { db, admin } = require('../firebase');
+const logger = require('../logger');
+
+router.post('/email', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email || typeof email !== 'string' || !email.includes('@')) {
+            return res.status(400).json({ 
+                valid: false,
+                error: 'Email inválido' 
+            });
+        }
+
+        try {
+            const userExists = await admin.auth().getUserByEmail(email);
+            if (userExists) {
+                logger.info(`Validação de email: ${email} já está em uso`);
+                return res.status(200).json({ 
+                    valid: false,
+                    error: 'Este email já está em uso'
+                });
+            }
+        } catch (error) {
+            if (error.code !== 'auth/user-not-found') {
+                throw error;
+            }
+        }
+
+        // Se chegou aqui, o email é válido e não está em uso
+        logger.info(`Validação de email: ${email} está disponível`);
+        return res.status(200).json({ valid: true });
+
+    } catch (error) {
+        logger.error('Erro na validação de email:', error);
+        return res.status(500).json({ 
+            valid: false,
+            error: 'Erro ao validar email'
+        });
+    }
+});
 
 router.post('/document', async (req, res) => {
     try {

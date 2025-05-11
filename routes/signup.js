@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const { db, admin } = require('../firebase');
@@ -6,13 +7,24 @@ const logger = require('../logger');
 // Rota de cadastro
 router.post('/', async (req, res) => {
   const { email, fullName, password, trial } = req.body;
-  const trialPeriod = trial === 'extended' ? 14 : 7;
 
-  // Validação básica
-  if (!email || !fullName || !password) {
-    logger.warn('Campos obrigatórios faltando no cadastro');
-    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+  // Validação detalhada dos campos
+  if (!email || typeof email !== 'string' || !email.includes('@')) {
+    logger.warn('Email inválido no cadastro');
+    return res.status(400).json({ error: 'Email inválido' });
   }
+
+  if (!fullName || typeof fullName !== 'string' || fullName.trim().length < 3) {
+    logger.warn('Nome completo inválido no cadastro');
+    return res.status(400).json({ error: 'Nome completo inválido' });
+  }
+
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    logger.warn('Senha inválida no cadastro');
+    return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' });
+  }
+
+  const trialPeriod = trial === 'extended' ? 14 : 7;
 
   try {
     // Verificar se o e-mail já existe
@@ -23,6 +35,7 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: 'Este email já está em uso' });
       }
     } catch (error) {
+      // Se o usuário não existe, podemos continuar
       if (error.code !== 'auth/user-not-found') {
         throw error;
       }
@@ -35,7 +48,7 @@ router.post('/', async (req, res) => {
       displayName: fullName.trim(),
     });
 
-    // Salvar dados no Firestore com o período de trial apropriado
+    // Salvar dados no Firestore
     await db.collection('users').doc(userRecord.uid).set({
       fullName: fullName.trim(),
       email: email.trim(),
@@ -44,29 +57,33 @@ router.post('/', async (req, res) => {
       role: 'user',
       autoBilling: true,
       trialPeriod: trialPeriod,
-    }, { merge: true });
+    });
 
     const customToken = await admin.auth().createCustomToken(userRecord.uid);
 
     logger.info(`Usuário ${email} cadastrado com sucesso (trial: ${trialPeriod} dias), UID: ${userRecord.uid}`);
-    res.status(201).json({
-      userId: userRecord.uid,
-      message: 'Cadastro concluído com sucesso',
+    
+    res.status(201).json({ 
+      message: 'Usuário criado com sucesso',
       customToken,
-      trialDays: trialPeriod,
+      user: {
+        uid: userRecord.uid,
+        email: userRecord.email,
+        displayName: userRecord.displayName
+      }
     });
   } catch (error) {
-    logger.error('Erro no cadastro:', error);
-
-    const errorMessages = {
-      'auth/email-already-exists': 'Este email já está em uso',
-      'auth/invalid-email': 'Email inválido',
-      'auth/weak-password': 'Senha muito fraca',
-      'auth/operation-not-allowed': 'Operação não permitida',
-    };
-
-    const message = errorMessages[error.code] || 'Ocorreu um erro durante o cadastro';
-    res.status(400).json({ error: message });
+    logger.error('Erro ao criar usuário:', error);
+    
+    if (error.code === 'auth/email-already-exists') {
+      return res.status(400).json({ error: 'Este email já está em uso' });
+    }
+    
+    if (error.code === 'auth/invalid-password') {
+      return res.status(400).json({ error: 'Senha inválida' });
+    }
+    
+    res.status(500).json({ error: 'Erro ao criar usuário' });
   }
 });
 

@@ -7,9 +7,7 @@ const router = express.Router();
 // Configurações hardcoded (removendo .env)
 const STRIPE_SECRET_KEY = 'sk_test_51R5WuOPFTVkGq67EIn9RsLP3VxNE45JUJli428nGLX7dwhnPsthXo7d276PvEOxUsgrATMd7fHUAWbqlmzHTavzl00WvGeWcAG';
 const STRIPE_WEBHOOK_SECRET = 'whsec_c38a7b80d552c42fc35ade8d80722369dfb705cdb42969871c00d00a1874dc14';
-const FRONTEND_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://nuvex-complete.vercel.app'
-  : 'http://localhost:8080';
+const FRONTEND_URL = 'http://localhost:8080';
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
